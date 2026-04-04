@@ -28,7 +28,7 @@ $verboseLogFile = "vcf-9-lab-deployment-${random_string}.log"
 $preCheck = 1
 $confirmDeployment = 1
 $deployNestedESXiVMsForMgmt = 1
-$deployNestedESXiVMsForWLD = 1
+$deployNestedESXiVMsForWLD = 0
 $setVLanId = 1
 $deployVCFInstaller = 1
 $updateVCFInstallerConfig = 1
@@ -519,6 +519,12 @@ if($confirmDeployment -eq 1) {
     Write-Host -NoNewline -ForegroundColor Green "Syslog: "
     Write-Host -ForegroundColor White $VMSyslog
 
+	if($VCSAclusterEvcMode -ne "$null"){
+		Write-Host -ForegroundColor Yellow "`n---- Nested vCenter Configuration for Management Domain ---- "
+		Write-Host -NoNewline -ForegroundColor Green "Cluster EVC Mode: "
+		Write-Host -ForegroundColor White $VCSAclusterEvcMode
+	}
+
     Write-Host -ForegroundColor Magenta "`nWould you like to proceed with this deployment?`n"
     $answer = Read-Host -Prompt "Do you accept (Y or N)"
     if($answer -ne "Y" -or $answer -ne "y") {
@@ -533,7 +539,7 @@ if($deployNestedESXiVMsForMgmt -eq 1 -or $updateVCFInstallerConfig -eq 1 -or $de
 	$WarningPreference = 'SilentlyContinue'
     $datastore = Get-Datastore -Server $viConnection -Name $VMDatastoreMGMT | Select -First 1
     $cluster = Get-Cluster -Server $viConnection -Name $VMCluster
-    $vmhost = $cluster | Get-VMHost -Datastore $datastore
+    $vmhost = $cluster | Get-VMHost -Datastore $datastore | Get-Random -Count 1
 	$rp = Get-ResourcePool -Name Resources -Location $cluster
 }
 
@@ -697,7 +703,7 @@ if($deployNestedESXiVMsForWLD -eq 1) {
 	$WarningPreference = 'SilentlyContinue'
     $datastore = Get-Datastore -Server $viConnection -Name $VMDatastoreWLD | Select -First 1
     $cluster = Get-Cluster -Server $viConnection -Name $VMCluster
-	$vmhost = $cluster | Get-VMHost -Datastore $datastore
+	$vmhost = $cluster | Get-VMHost -Datastore $datastore | Get-Random -Count 1
 	$rp = Get-ResourcePool -Name Resources -Location $cluster
 }
 
@@ -947,7 +953,7 @@ if($generateMgmtJson -eq 1) {
         $clusterSpec = [ordered]@{
             "clusterName" = $VCSAClusterName
             "datacenterName" = $VCSADatacenterName
-            "clusterEvcMode" = ""
+            "clusterEvcMode" = $VCSAclusterEvcMode
             "clusterImageEnabled" = $VCSAEnableVCLM
         }
         $dsSpec = [ordered]@{
