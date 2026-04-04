@@ -21,6 +21,12 @@
 This script makes it very easy for anyone to deploy a "basic" VMware Cloud Foundation (VCF) 9.x Fleet OR VMware vSphere Foundation (VVF) in a Nested Lab environment for learning and educational purposes.
 
 ## Changelog
+* **01/04/2026**
+  * Related [Blog Post](https://strivevirtually.net/post/automated-vmware-cloud-foundation-lab-vcf-9.x-fleet-deployment-vlan-fork---with-vcf-automation/)
+  * Fixed shared storage datastore
+  * Added EVC variable if needed: **$VCSAclusterEvcMode** = "" #One among: INTEL_MEROM, INTEL_PENRYN, INTEL_NEALEM, INTEL_WESTMERE, INTEL_SANDYBRIDGE, INTEL_IVYBRIDGE, INTEL_HASWELL, INTEL_BROADWELL, INTEL_SKYLAKE, INTEL_CASCADELAKE, INTEL_ICELAKE, INTEL_SAPPHIRERAPIDS, AMD_REV_E, AMD_REV_F, AMD_GREYHOUND_NO3DNOW, AMD_GREYHOUND, AMD_BULLDOZER, AMD_PILEDRIVER, AMD_STREAMROLLER, AMD_ZEN, AMD_ZEN2, AMD_ZEN3, AMD_ZEN4
+  * Added comment on variable **$NestedESXiMGMTvMEM**: Tips: 122GB for VCF single node with Wld VMs or 114GB for 2 nodes and with VCF automation enabled "**$noVCFAutomation** = 0" in sample but without Wld VMs "**$deployNestedESXiVMsForWLD** = 0" in deployment script
+
 * **27/03/2026**
   * Related [Blog Post](https://strivevirtually.net/post/automated-vmware-cloud-foundation-lab-vcf-9.x-fleet-deployment-vlan-fork/) 
   * VLANs with reference taken from [vcf-9.0-planning-and-preparation-workbook.xlsx](https://techdocs.broadcom.com/content/dam/broadcom/techdocs/us/en/assets/vmware-cis/vcf/vcf-9.0-planning-and-preparation-workbook.xlsx)
