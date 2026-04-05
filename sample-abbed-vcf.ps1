@@ -7,8 +7,8 @@ $VIPassword = "VMware1!VMware1!"
 $VAppLabel = "AbbedSedkaoui-VCF9"
 $VMDatacenter = "VCF-Datacenter"
 $VMCluster = "VCF-Mgmt-Cluster"
-$VMDatastoreMGMT = "local-vmfs-datastore-2" # using 2TB NVMe on Physical ESXi02 used for OS_DATA 32GB and NVMe Memory Tiering 256GB disabled for this lab
-$VMDatastoreWLD = "local-vmfs-datastore-1"
+$VMDatastoreMGMT = "NFS01-Rocky"
+$VMDatastoreWLD = "NFS01-Rocky"
 $VMNetmask = "255.255.255.0"
 $VMGateway = "10.11.10.53"
 $VMNestedESXiMgmtGateway = "10.11.11.53" # Download VCF9 workbook at this link https://techdocs.broadcom.com/content/dam/broadcom/techdocs/us/en/assets/vmware-cis/vcf/vcf-9.0-planning-and-preparation-workbook.xlsx
@@ -99,20 +99,20 @@ $SddcManagerLocalPassword = "VMware1!VMware1!"
 # Nested ESXi VMs for Management Domain
 $NestedESXiHostnameToIPsForManagementDomain = @{
     "esx01" = "10.11.11.1"
-    #"esx02" = "10.11.11.2"
+    "esx02" = "10.11.11.2"
     #"esx03" = "10.11.11.3"
 }
 
 # Nested ESXi VMs for Workload Domain
 $NestedESXiHostnameToIPsForWorkloadDomain = @{
-    "esx04" = "10.13.11.4"
-    "esx05" = "10.13.11.5"
+    #"esx04" = "10.13.11.4"
+    #"esx05" = "10.13.11.5"
     #"esx06" = "10.13.11.6"
 }
 
 # Nested ESXi VM Resources for Management Domain
 $NestedESXiMGMTvCPU = "24"
-$NestedESXiMGMTvMEM = "122" #GB
+$NestedESXiMGMTvMEM = "114" #GB #Tips: 122GB for VCF single node with Wld VMs or 114GB for 2 nodes and with VCF automation enabled "$noVCFAutomation = 0" in sample but without Wld VMs "$deployNestedESXiVMsForWLD = 0" in deployment script
 $NestedESXiMGMTCachingvDisk = "32" #GB
 $NestedESXiMGMTCapacityvDisk = "2000" #GB
 $NestedESXiMGMTBootDisk = "64" #GB
@@ -158,6 +158,7 @@ $VCSAVDS = "sddc1-cl01-vds01"
 $VCSAVDSMTU = 9000 # Needs to match your physical MTU
 $VCSAMgmtPortgroupName = "DVPG_FOR_MANAGEMENT"
 $VCSAVMNetworkPortgroupName = "DVPG_FOR_VM_MANAGEMENT"
+$VCSAclusterEvcMode = "" #One among: INTEL_MEROM, INTEL_PENRYN, INTEL_NEALEM, INTEL_WESTMERE, INTEL_SANDYBRIDGE, INTEL_IVYBRIDGE, INTEL_HASWELL, INTEL_BROADWELL, INTEL_SKYLAKE, INTEL_CASCADELAKE, INTEL_ICELAKE, INTEL_SAPPHIRERAPIDS, AMD_REV_E, AMD_REV_F, AMD_GREYHOUND_NO3DNOW, AMD_GREYHOUND, AMD_BULLDOZER, AMD_PILEDRIVER, AMD_STREAMROLLER, AMD_ZEN, AMD_ZEN2, AMD_ZEN3, AMD_ZEN4
 
 #vSAN Configuration
 $VSANStoragePolicyName = "vsan-ftt-storage-policy"
@@ -200,7 +201,7 @@ $VCFAutomationNodePrefix = "vcf-abs-auto"
 $VCFAutomationClusterCIDR = "198.18.0.0/15"
 
 # Set to 1 only if you do not want VCF Automation to be deployed in the bringup
-$noVCFAutomation = 1
+$noVCFAutomation = 0
 
 # VCF Workload Domain Configurations
 $VCFWorkloadDomainName = "vcf-w01"
