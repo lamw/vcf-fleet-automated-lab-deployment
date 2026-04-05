@@ -21,6 +21,29 @@
 This script makes it very easy for anyone to deploy a "basic" VMware Cloud Foundation (VCF) 9.x Fleet OR VMware vSphere Foundation (VVF) in a Nested Lab environment for learning and educational purposes.
 
 ## Changelog
+* **01/04/2026**
+  * Related [Blog Post](https://strivevirtually.net/post/automated-vmware-cloud-foundation-lab-vcf-9.x-fleet-deployment-vlan-fork---with-vcf-automation/)
+  * Fixed shared storage datastore
+  * Added EVC variable if needed: **$VCSAclusterEvcMode** = "" #One among: INTEL_MEROM, INTEL_PENRYN, INTEL_NEALEM, INTEL_WESTMERE, INTEL_SANDYBRIDGE, INTEL_IVYBRIDGE, INTEL_HASWELL, INTEL_BROADWELL, INTEL_SKYLAKE, INTEL_CASCADELAKE, INTEL_ICELAKE, INTEL_SAPPHIRERAPIDS, AMD_REV_E, AMD_REV_F, AMD_GREYHOUND_NO3DNOW, AMD_GREYHOUND, AMD_BULLDOZER, AMD_PILEDRIVER, AMD_STREAMROLLER, AMD_ZEN, AMD_ZEN2, AMD_ZEN3, AMD_ZEN4
+  * Added comment on variable **$NestedESXiMGMTvMEM**: Tips: 122GB for VCF single node with Wld VMs or 114GB for 2 nodes and with VCF automation enabled "**$noVCFAutomation** = 0" in sample but without Wld VMs "**$deployNestedESXiVMsForWLD** = 0" in deployment script
+
+* **27/03/2026**
+  * Related [Blog Post](https://strivevirtually.net/post/automated-vmware-cloud-foundation-lab-vcf-9.x-fleet-deployment-vlan-fork/) 
+  * VLANs with reference taken from [vcf-9.0-planning-and-preparation-workbook.xlsx](https://techdocs.broadcom.com/content/dam/broadcom/techdocs/us/en/assets/vmware-cis/vcf/vcf-9.0-planning-and-preparation-workbook.xlsx)
+   * Gateways
+   * Network subnets  
+  * Added separate datastore for Management Domain and Workload Domain, also using local vmfs
+  * Added variable **$VCFWorkloadDomainNSXManagerSize** = "small"
+  * Added creation of network pool for VSAN and VMOTION on Workload Domain based on network subnets
+  * Added variables **$VCFInstallerVMvCPU** and **$VCFInstallerVMvMEM** of VCF Installer VM, reducing by half from 4vCPU+16GBvMEM to 2vCPU+8GBvMEM
+  * Added variables **$vGuestOS** and **$vHardwareVersion** of vESXi VMs, increasing it from vmkernel8Guest+vmx-20 to vmkernel9Guest+vmx-22  [default vmx-20, vmx-21 nvme 1.3c, vmx-22 nvme 1.4 ref.](https://techdocs.broadcom.com/us/en/vmware-cis/vsphere/vsphere/9-0/vsphere-virtual-machine-administration/configuring-virtual-machine-hardwarevsphere-vm-admin/virtual-machine-compatibilityvsphere-vm-admin/hardware-features-available-with-virtual-machine-compatibility-levelsvsphere-vm-admin.html)
+  * Added variable **$noVCFAutomation** to skip it in the deployment by setting it to 1 (default reducing by 24vCPU+96vMEM less the lab footprint)
+  * Added missing variables under "VCF Installer Setup" to allow 1 host VSAN cluster and, help in VSAN ESA deployment usecase, the code was already present
+  * Added check if vApp exist to run the script multiple times on the same vApp just by commenting the value of $random_string and replace its value with the deployment id generated in previous run
+  * Added ability to run multiple vApp while using the same VMs name by fixing **$moveVMsIntovApp** with trick previously shared by fellow vExpert LucD
+  * Changed default **$VCSASize** = "tiny" # default is small, tiny is good enough for LAB/POC seeing the number of VMs. ref. configmax
+  * Changed default **$VCFOperationsSize** = "xsmall" # default is small, xsmall is for under 700 objects, that's good enough for POC/LAB. ref. [vcf-operations-90-sizing-guidelines](https://knowledge.broadcom.com/external/article/397782/vcf-operations-90-sizing-guidelines.html)
+
 * **09/02/2021**
   * Updated documentation for VVF deployment
 
