@@ -21,10 +21,10 @@
 This script makes it very easy for anyone to deploy a "basic" VMware Cloud Foundation (VCF) 9.x Fleet OR VMware vSphere Foundation (VVF) in a Nested Lab environment for learning and educational purposes.
 
 ## Changelog
-* **09/02/2021**
+* **09/02/2025**
   * Updated documentation for VVF deployment
 
-* **09/01/2021**
+* **09/01/2025**
   * Initial Release
 
 ## VCF
@@ -37,7 +37,7 @@ Below is a diagram of what is deployed as part of the solution and you will need
 
 * VCF subscription entitlement to download VCF 9.x software binaries
 * VCF Online or Offline Depot
-* [Nested ESX 9.0.0.0 OVA](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Nested%20ESXi%20Virtual%20Appliance&release=9.0.0.0&os=&servicePk=&language=EN)
+* [Nested ESXi 9.0.0.0 OVA](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Nested%20ESXi%20Virtual%20Appliance&release=9.0.0.0&os=&servicePk=&language=EN)
     * ESXi 9.0 is only available as part of VMware Cloud Foundation (VCF) or VMware vSphere Foundation (VVF) subscription, you will need an active VVF/VCF entitlement to download the Nested ESXi 9.x Virtual Appliance. For [VMUG Advantage members who have obtained the new VCP-VCF certification](https://williamlam.com/2025/07/how-to-deploy-vvf-vcf-9-0-using-vmug-advantage-vcp-vcf-certification-entitlement.html), you will be entitled to the download.
 * vCenter Server running at least vSphere 8.0 or later
     * If your physical storage is vSAN, please ensure you've applied the following setting as mentioned [here](https://www.williamlam.com/2013/11/how-to-run-nested-esxi-on-top-of-vsan.html)
@@ -86,7 +86,7 @@ $VMSyslog = "172.16.1.250"
 $VMFolder = "wlam"
 ```
 
-This section describes enabling debug option which will produce additional logging of the API request and pyaload for troubleshooting purposes.
+This section describes enabling debug option which will produce additional logging of the API request and payload for troubleshooting purposes.
 ```console
 $Debug = $false
 ```
@@ -109,7 +109,7 @@ For VCF Online Depot, generate [Broadcom Download Token](https://knowledge.broad
 
 For VCF Offline Depot, you will need to have all required binaries/metadata downloaded using the new [VCF Download Tool](https://techdocs.broadcom.com/us/en/vmware-cis/vcf/vcf-9-0-and-later/9-0/deployment/deploying-a-new-vmware-cloud-foundation-or-vmware-vsphere-foundation-private-cloud-/preparing-your-environment/downloading-binaries-to-the-vcf-installer-appliance/use-the-vmware-download-tool-to-download-binaries.html). If you are a VMUG Advantage Member with VCP-VCF certification, you can refer to this [process](https://williamlam.com/2025/07/how-to-deploy-vvf-vcf-9-0-using-vmug-advantage-vcp-vcf-certification-entitlement.html) for setting up your VCF Offline Depot. Once your VCF Offline Depot is up and running, you can then populate the required fields below.
 
-For VCF Offline Depot, this must be setup in advanced
+For VCF Offline Depot, this must be set up in advance
 ```console
 # VCF Software Depot Configuration
 $VCFInstallerSoftwareDepot = "offline" #online or offline
@@ -382,7 +382,7 @@ Below is a diagram of what is deployed as part of the solution and you will need
 * vCenter Server running at least vSphere 8.0 or later
     * If your physical storage is vSAN, please ensure you've applied the following setting as mentioned [here](https://www.williamlam.com/2013/11/how-to-run-nested-esxi-on-top-of-vsan.html)
 * ESXi Networking
-  * Enable either [MAC Learning](https://williamlam.com/2018/04/native-mac-learning-in-vsphere-6-7-removes-the-need-for-promiscuous-mode-for-nested-esxi.html) or [Promiscuous Mode](https://knowledge.broadcom.com/external/article?legacyId=1004099) and also enable Forged transmits on your physical ESXi host networking to ensure proper network connectivity for Nested ESXi workloads
+  * Enable either [MAC Learning](https://williamlam.com/2018/04/native-mac-learning-in-vsphere-6-7-removes-the-need-for-promiscuous-mode-for-nested-esxi.html) or [Promiscuous Mode](https://knowledge.broadcom.com/external/article?legacyId=1004099) and also enable Forged Transmits on your physical ESXi host networking to ensure proper network connectivity for Nested ESXi workloads
 * Resource Requirements
     * Compute
         * Ability to provision VMs with up to 4 vCPU
