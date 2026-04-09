@@ -156,7 +156,7 @@ Function Verify-VCFAPIEndpoint {
             }
         } catch {
             My-Logger "${EndpointName} API is not ready yet, sleeping for 120 seconds ..."
-            sleep 30
+            Start-Sleep 120
         }
     }
 }
@@ -264,7 +264,7 @@ Function Sync-VCFDepot {
             if($requests.StatusCode -eq 200) {
                 if(($requests.Content | ConvertFrom-Json).syncStatus -ne "SYNCED") {
                     My-Logger "VCF Software Depot Sync not ready yet, sleeping for 60 seconds ..."
-                    sleep 60
+                    Start-Sleep 60
                 } else {
                     My-Logger "Successfully synced VCF Software Depot ..."
                     break
@@ -314,7 +314,7 @@ Function Download-VCFRelease {
 
     # Retreive the components for a given SKU
     $bundle = @{}
-    $components = (($requests.Content | ConvertFrom-Json).elements | where {$_.releaseVersion -eq $VCFInstallerProductVersion}).components
+    $components = (($requests.Content | ConvertFrom-Json).elements | Where-Object {$_.releaseVersion -eq $VCFInstallerProductVersion}).components
     foreach ($component in $components) {
         $bundle[$component.name]=$component.versions.artifacts.bundles.id
     }
@@ -327,7 +327,7 @@ Function Download-VCFRelease {
 
     while(1) {
         try {
-            $uri = "https://${EndpointIp}/v1/bundles/download-status?releaseVersion=${VCFInstallerVersion}&imageType=INSTALL"
+            $uri = "https://${EndpointIp}/v1/bundles/download-status?releaseVersion=${VCFInstallerProductVersion}&imageType=INSTALL"
             $method = "GET"
             $body = $null
 
@@ -343,7 +343,7 @@ Function Download-VCFRelease {
 
                 if($downloadStatus-contains "INPROGRESS" -or $downloadStatus -contains "SCHEDULED" -or $downloadStatus -contains "VALIDATING" -or $downloadStatus-contains "FAILED") {
                     if($downloadStatus -contains "FAILED") {
-                        $failedBundles = (($requests.Content | ConvertFrom-Json).elements | where {$_.downloadStatus -eq "FAILED"})
+                        $failedBundles = (($requests.Content | ConvertFrom-Json).elements | Where-Object {$_.downloadStatus -eq "FAILED"})
 
                         foreach ($failedBundle in $failedBundles) {
                             My-Logger "Re-attempting to download $(${failedBundle}.componentType) component"
@@ -352,7 +352,7 @@ Function Download-VCFRelease {
                         }
                     }
                     My-Logger "$VCFInstallerProductSKU bundle download has not completed or has not been validated yet, sleeping for 5min ..."
-                    sleep 120
+                    Start-Sleep 300
                 } else {
                     My-Logger "Successfully downloaded $VCFInstallerProductSKU ${VCFInstallerProductVersion} bundle ..."
                     break
@@ -397,7 +397,7 @@ if($confirmDeployment -eq 1) {
 
     Write-Host -ForegroundColor Magenta "`nWould you like to proceed with this deployment?`n"
     $answer = Read-Host -Prompt "Do you accept (Y or N)"
-    if($answer -ne "Y" -or $answer -ne "y") {
+    if($answer -ne "Y" -and $answer -ne "y") {
         exit
     }
     Clear-Host
@@ -472,7 +472,7 @@ if($generateWldHostCommissionJson -eq 1 -or $startWLDDeployment -eq 1) {
 if($generateWldHostCommissionJson -eq 1) {
     My-Logger "Generating VCF Workload Domain Host Commission file $VCFWorkloadDomainUIJSONFile and $VCFWorkloadDomainAPIJSONFile for SDDC Manager UI and API"
 
-    $mgmtPoolId = (Get-VCFNetworkPool | where {$_.name -match $DeploymentId}).id
+    $mgmtPoolId = (Get-VCFNetworkPool | Where-Object {$_.name -match $DeploymentId}).id
 
     if($VCFWorkloadDomainEnableVSANESA) {
         $storageType = "VSAN_ESA"
@@ -526,7 +526,7 @@ if($commissionHost -eq 1) {
     My-Logger "Comissioning new ESXi hosts for Workload Domain deployment using $VCFWorkloadDomainAPIJSONFile ..."
     while( (Get-VCFTask ${commissionHostResult}.id).status -ne "Successful" ) {
         My-Logger "Host commission has not completed, sleeping for 30 seconds"
-        Start-Sleep -Second 30
+        Start-Sleep -Seconds 30
     }
 }
 
@@ -681,7 +681,7 @@ if($generateWLDDeploymentFile -eq 1) {
     }
 
     if($VCFWorkloadDomainEnableVCLM) {
-        $clusterImageId = (Get-VCFPersonality | where {$_.personalityName -eq $VCFManagementDomainVLCMImageName}).personalityId
+        $clusterImageId = (Get-VCFPersonality | Where-Object {$_.personalityName -eq $VCFManagementDomainVLCMImageName}).personalityId
 
         if($clusterImageId -eq $null) {
             Write-Host -ForegroundColor Red "`nUnable to find vLCM Image named $VCFManagementDomainVLCMImageName ...`n"

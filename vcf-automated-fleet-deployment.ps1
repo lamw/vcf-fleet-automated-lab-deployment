@@ -62,7 +62,7 @@ Function Get-VCFInstallerToken {
     $body = $payload | ConvertTo-Json
 
     try {
-        $requests = Invoke-WebRequest -Uri "https://${VCFInstallerFQDN}/v1/tokens" -Method POST -SkipCertificateCheck -TimeoutSec 5 -Headers @{"Content-Type"="application/json";"Accept"="application/json"} -Body $body
+        $requests = Invoke-WebRequest -Uri "https://${VCFInstallerFQDN}/v1/tokens" -Method POST -SkipCertificateCheck -TimeoutSec 30 -Headers @{"Content-Type"="application/json";"Accept"="application/json"} -Body $body
         if($requests.StatusCode -eq 200) {
             $accessToken = ($requests.Content | ConvertFrom-Json).accessToken
         }
@@ -162,7 +162,7 @@ Function Verify-VCFAPIEndpoint {
             }
         } catch {
             My-Logger "${EndpointName} API is not ready yet, sleeping for 120 seconds ..."
-            sleep 120
+            Start-Sleep 120
         }
     }
 }
@@ -204,7 +204,7 @@ Function Connect-VCFDepot {
             My-Logger "DEBUG: Uri: $uri"
             My-Logger "DEBUG: Body: $body"
         }
-	$requests = Invoke-WebRequest -Uri $uri -Method $method -SkipCertificateCheck -TimeoutSec 5 -Headers $headers -Body $body -ErrorAction Stop
+	$requests = Invoke-WebRequest -Uri $uri -Method $method -SkipCertificateCheck -TimeoutSec 30 -Headers $headers -Body $body -ErrorAction Stop
     } catch {
 	My-Logger "Failed to connect to VCF Software Depot" "red"
 	$requests
@@ -270,7 +270,7 @@ Function Sync-VCFDepot {
             if($requests.StatusCode -eq 200) {
                 if(($requests.Content | ConvertFrom-Json).syncStatus -ne "SYNCED") {
                     My-Logger "VCF Software Depot Sync not ready yet, sleeping for 60 seconds ..."
-                    sleep 60
+                    Start-Sleep 60
                 } else {
                     My-Logger "Successfully synced VCF Software Depot ..."
                     break
@@ -320,7 +320,7 @@ Function Download-VCFRelease {
 
     # Retreive the components for a given SKU
     $bundle = @{}
-    $components = (($requests.Content | ConvertFrom-Json).elements | where {$_.releaseVersion -eq $VCFInstallerProductVersion}).components
+    $components = (($requests.Content | ConvertFrom-Json).elements | Where-Object {$_.releaseVersion -eq $VCFInstallerProductVersion}).components
     foreach ($component in $components) {
         $bundle[$component.name]=$component.versions.artifacts.bundles.id
     }
@@ -333,7 +333,7 @@ Function Download-VCFRelease {
 
     while(1) {
         try {
-            $uri = "https://${EndpointIp}/v1/bundles/download-status?releaseVersion=${VCFInstallerVersion}&imageType=INSTALL"
+            $uri = "https://${EndpointIp}/v1/bundles/download-status?releaseVersion=${VCFInstallerProductVersion}&imageType=INSTALL"
             $method = "GET"
             $body = $null
 
@@ -349,7 +349,7 @@ Function Download-VCFRelease {
 
                 if($downloadStatus-contains "INPROGRESS" -or $downloadStatus -contains "SCHEDULED" -or $downloadStatus -contains "VALIDATING" -or $downloadStatus-contains "FAILED") {
                     if($downloadStatus -contains "FAILED") {
-                        $failedBundles = (($requests.Content | ConvertFrom-Json).elements | where {$_.downloadStatus -eq "FAILED"})
+                        $failedBundles = (($requests.Content | ConvertFrom-Json).elements | Where-Object {$_.downloadStatus -eq "FAILED"})
 
                         foreach ($failedBundle in $failedBundles) {
                             My-Logger "Re-attempting to download $(${failedBundle}.componentType) component"
@@ -358,7 +358,7 @@ Function Download-VCFRelease {
                         }
                     }
                     My-Logger "$VCFInstallerProductSKU bundle download has not completed or has not been validated yet, sleeping for 5min ..."
-                    sleep 120
+                    Start-Sleep 300
                 } else {
                     My-Logger "Successfully downloaded $VCFInstallerProductSKU ${VCFInstallerProductVersion} bundle ..."
                     break
@@ -480,7 +480,7 @@ if($confirmDeployment -eq 1) {
 
     Write-Host -ForegroundColor Magenta "`nWould you like to proceed with this deployment?`n"
     $answer = Read-Host -Prompt "Do you accept (Y or N)"
-    if($answer -ne "Y" -or $answer -ne "y") {
+    if($answer -ne "Y" -and $answer -ne "y") {
         exit
     }
     Clear-Host
@@ -490,7 +490,7 @@ if($deployNestedESXiVMsForMgmt -eq 1 -or $deployNestedESXiVMsForWLD -eq 1 -or $u
     My-Logger "Connecting to Management vCenter Server $VIServer ..."
     $viConnection = Connect-VIServer $VIServer -User $VIUsername -Password $VIPassword -WarningAction SilentlyContinue
 
-    $datastore = Get-Datastore -Server $viConnection -Name $VMDatastore | Select -First 1
+    $datastore = Get-Datastore -Server $viConnection -Name $VMDatastore | Select-Object -First 1
     $cluster = Get-Cluster -Server $viConnection -Name $VMCluster
     $vmhost = $cluster | Get-VMHost | Get-Random -Count 1
 }
@@ -498,7 +498,7 @@ if($deployNestedESXiVMsForMgmt -eq 1 -or $deployNestedESXiVMsForWLD -eq 1 -or $u
 if($deployVCFInstaller -eq 1) {
     $ovfconfig = Get-OvfConfiguration $VCFInstallerOVA
 
-    $networkMapLabel = ($ovfconfig.ToHashTable().keys | where {$_ -Match "NetworkMapping"}).replace("NetworkMapping.","").replace("-","_").replace(" ","_")
+    $networkMapLabel = ($ovfconfig.ToHashTable().keys | Where-Object {$_ -Match "NetworkMapping"}).replace("NetworkMapping.","").replace("-","_").replace(" ","_")
     $ovfconfig.NetworkMapping.$networkMapLabel.value = $VMNetwork
     $ovfconfig.Common.vami.hostname.value = $VCFInstallerFQDN
     $ovfconfig.vami.SDDC_Manager.ip0.value = $VCFInstallerIP
@@ -537,7 +537,7 @@ if($updateVCFInstallerConfig -eq 1) {
         }
         catch {
             My-Logger "VCF Installer UI is not ready yet, sleeping for 120 seconds ..."
-            sleep 120
+            Start-Sleep 120
         }
     }
 
@@ -591,7 +591,7 @@ if($deployNestedESXiVMsForMgmt -eq 1) {
         $VMIPAddress = $_.Value
 
         $ovfconfig = Get-OvfConfiguration $NestedESXiApplianceOVA
-        $networkMapLabel = ($ovfconfig.ToHashTable().keys | where {$_ -Match "NetworkMapping"}).replace("NetworkMapping.","").replace("-","_").replace(" ","_")
+        $networkMapLabel = ($ovfconfig.ToHashTable().keys | Where-Object {$_ -Match "NetworkMapping"}).replace("NetworkMapping.","").replace("-","_").replace(" ","_")
         $ovfconfig.NetworkMapping.$networkMapLabel.value = $VMNetwork
         $ovfconfig.common.guestinfo.hostname.value = "${VMName}.${VMDomain}"
         $ovfconfig.common.guestinfo.ipaddress.value = $VMIPAddress
@@ -650,7 +650,7 @@ if($deployNestedESXiVMsForWLD -eq 1) {
         $VMIPAddress = $_.Value
 
         $ovfconfig = Get-OvfConfiguration $NestedESXiApplianceOVA
-        $networkMapLabel = ($ovfconfig.ToHashTable().keys | where {$_ -Match "NetworkMapping"}).replace("NetworkMapping.","").replace("-","_").replace(" ","_")
+        $networkMapLabel = ($ovfconfig.ToHashTable().keys | Where-Object {$_ -Match "NetworkMapping"}).replace("NetworkMapping.","").replace("-","_").replace(" ","_")
         $ovfconfig.NetworkMapping.$networkMapLabel.value = $VMNetwork
         $ovfconfig.common.guestinfo.hostname.value = "${VMName}.${VMDomain}"
         $ovfconfig.common.guestinfo.ipaddress.value = $VMIPAddress
@@ -718,7 +718,7 @@ if($moveVMsIntovApp -eq 1) {
         if($deployNestedESXiVMsForMgmt -eq 1) {
             My-Logger "Moving Nested Managenment ESXi VMs into $VAppName vApp ..."
             $NestedESXiHostnameToIPsForManagementDomain.GetEnumerator() | Sort-Object -Property Value | Foreach-Object {
-                $vm = Get-VM -Name $_.Key -Server $viConnection -Location $cluster | where{$_.ResourcePool.Id -eq $rp.Id}
+                $vm = Get-VM -Name $_.Key -Server $viConnection -Location $cluster | Where-Object{$_.ResourcePool.Id -eq $rp.Id}
                 Move-VM -VM $vm -Server $viConnection -Destination $VApp -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
             }
         }
@@ -726,13 +726,13 @@ if($moveVMsIntovApp -eq 1) {
         if($deployNestedESXiVMsForWLD -eq 1) {
             My-Logger "Moving Nested Workload ESXi VMs into $VAppName vApp ..."
             $NestedESXiHostnameToIPsForWorkloadDomain.GetEnumerator() | Sort-Object -Property Value | Foreach-Object {
-                $vm = Get-VM -Name $_.Key -Server $viConnection -Location $cluster | where{$_.ResourcePool.Id -eq $rp.Id}
+                $vm = Get-VM -Name $_.Key -Server $viConnection -Location $cluster | Where-Object{$_.ResourcePool.Id -eq $rp.Id}
                 Move-VM -VM $vm -Server $viConnection -Destination $VApp -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
             }
         }
 
         if($deployVCFInstaller -eq 1) {
-            $vcfInstallerVM = Get-VM -Name $VCFInstallerVMName -Server $viConnection -Location $cluster | where{$_.ResourcePool.Id -eq $rp.Id}
+            $vcfInstallerVM = Get-VM -Name $VCFInstallerVMName -Server $viConnection -Location $cluster | Where-Object{$_.ResourcePool.Id -eq $rp.Id}
             My-Logger "Moving $VCFInstallerVMName into $VAppName vApp ..."
             Move-VM -VM $vcfInstallerVM -Server $viConnection -Destination $VApp -Confirm:$false | Out-File -Append -LiteralPath $verboseLogFile
         }
@@ -950,7 +950,7 @@ if($generateMgmtJson -eq 1) {
                 "includeIpAddress" = $null
                 "includeIpAddressRanges" = @(@{"startIpAddress" = $esxivMotionStart;"endIpAddress" = $esxivMotionEnd})
                 "vlanId" = "0"
-                "mtu" = "8900"
+                "mtu" = "8940"
                 "teamingPolicy" = "loadbalance_loadbased"
                 "activeUplinks" = @("uplink1","uplink2")
                 "standbyUplinks" = @()
@@ -965,7 +965,7 @@ if($generateMgmtJson -eq 1) {
                 "teamingPolicy" = "loadbalance_loadbased"
                 "includeIpAddressRanges" = @(@{"startIpAddress" = $esxivSANStart;"endIpAddress" = $esxivSANEnd})
                 "vlanId" = "0"
-                "mtu" = "8900"
+                "mtu" = "8940"
                 "activeUplinks" = @("uplink1","uplink2")
                 "standbyUplinks" = @()
                 "portGroupKey" = "DVPG_FOR_VSAN"
@@ -980,7 +980,7 @@ if($generateMgmtJson -eq 1) {
                     "VMOTION",
                     "VSAN"
                 )
-                "mtu" = "8900"
+                "mtu" = "8940"
                 "nsxtSwitchConfig" = [ordered]@{
                     "transportZones" = @(
                         @{
@@ -1086,11 +1086,11 @@ if($startVCFBringup -eq 1 -and $uploadVCFNotifyScript -eq 1) {
         $vcfVM = Get-VM -Server $viConnection $vcfInstallerVMName
 
         My-Logger "Uploading VCF notification script $srcNotificationScript to $dstNotificationScript on VCF Installer appliance ..."
-        Copy-VMGuestFile -Server $viConnection -VM $vcfVM -Source $srcNotificationScript -Destination $dstNotificationScript -LocalToGuest -GuestUser "root" -GuestPassword VCFInstallerRootPassword | Out-Null
-        Invoke-VMScript -Server $viConnection -VM $vcfVM -ScriptText "chmod +x $dstNotificationScript" -GuestUser "root" -GuestPassword VCFInstallerRootPassword | Out-Null
+        Copy-VMGuestFile -Server $viConnection -VM $vcfVM -Source $srcNotificationScript -Destination $dstNotificationScript -LocalToGuest -GuestUser "root" -GuestPassword $VCFInstallerRootPassword | Out-Null
+        Invoke-VMScript -Server $viConnection -VM $vcfVM -ScriptText "chmod +x $dstNotificationScript" -GuestUser "root" -GuestPassword $VCFInstallerRootPassword | Out-Null
 
         My-Logger "Configuring crontab to run notification check script every 15 minutes ..."
-        Invoke-VMScript -Server $viConnection -VM $vcfVM -ScriptText "echo '*/15 * * * * $dstNotificationScript' > /var/spool/cron/root" -GuestUser "root" -GuestPassword VCFInstallerRootPassword | Out-Null
+        Invoke-VMScript -Server $viConnection -VM $vcfVM -ScriptText "echo '*/15 * * * * $dstNotificationScript' > /var/spool/cron/root" -GuestUser "root" -GuestPassword $VCFInstallerRootPassword | Out-Null
     }
 }
 
