@@ -21,6 +21,10 @@
 This script makes it very easy for anyone to deploy a "basic" VMware Cloud Foundation (VCF) 9.x Fleet OR VMware vSphere Foundation (VVF) in a Nested Lab environment for learning and educational purposes.
 
 ## Changelog
+* **05/12/2026**
+  * Updated to support VVF/VCF 9.1
+  * For VVF/VCF 9.0.x deployments, please use [VCF 9.0](9.0) directory
+
 * **09/02/2025**
   * Updated documentation for VVF deployment
 
@@ -37,8 +41,8 @@ Below is a diagram of what is deployed as part of the solution and you will need
 
 * VCF subscription entitlement to download VCF 9.x software binaries
 * VCF Online or Offline Depot
-* [Nested ESXi 9.0.0.0 OVA](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Nested%20ESXi%20Virtual%20Appliance&release=9.0.0.0&os=&servicePk=&language=EN)
-    * ESXi 9.0 is only available as part of VMware Cloud Foundation (VCF) or VMware vSphere Foundation (VVF) subscription, you will need an active VVF/VCF entitlement to download the Nested ESXi 9.x Virtual Appliance. For [VMUG Advantage members who have obtained the new VCP-VCF certification](https://williamlam.com/2025/07/how-to-deploy-vvf-vcf-9-0-using-vmug-advantage-vcp-vcf-certification-entitlement.html), you will be entitled to the download.
+* [Nested ESXi 9.1.0.0 OVA](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Nested%20ESXi%20Virtual%20Appliance&release=9.1.0.0&os=&servicePk=&language=EN)
+    * ESXi 9.1 is only available as part of VMware Cloud Foundation (VCF) or VMware vSphere Foundation (VVF) subscription, you will need an active VVF/VCF entitlement to download the Nested ESXi 9.x Virtual Appliance. For [VMUG Advantage members who have obtained the new VCP-VCF certification](https://williamlam.com/2025/07/how-to-deploy-vvf-vcf-9-0-using-vmug-advantage-vcp-vcf-certification-entitlement.html), you will be entitled to the download.
 * vCenter Server running at least vSphere 8.0 or later
     * If your physical storage is vSAN, please ensure you've applied the following setting as mentioned [here](https://www.williamlam.com/2013/11/how-to-run-nested-esxi-on-top-of-vsan.html)
 * ESXi Networking
@@ -46,11 +50,11 @@ Below is a diagram of what is deployed as part of the solution and you will need
 * Resource Requirements
     * Compute
         * Ability to provision VMs with up to 24 vCPU
-        * Ability to provision up to 336 GB of memory
+        * Ability to provision up to 275 GB of memory
         * DRS-enabled Cluster (not required but vApp creation will not be possible)
     * Network
         * 1 x Standard or Distributed Portgroup (routable) to deploy all VMs
-           * 12 x FQDN/IP Addresses for initial VCF 9 Fleet
+           * 17 x FQDN/IP Addresses for initial VCF 9 Fleet
            * 6 x FQDN/IP Addresses for Workload Domain Deployment
     * Storage
         * Ability to provision up to 1.25 TB of storage (thin provisioned)
@@ -60,7 +64,7 @@ Below is a diagram of what is deployed as part of the solution and you will need
 
 Before deploying a VCF Fleet, which includes a VCF Management Domain, you will need to edit the deployment configuration file that contains all the relevant variables that are used by the deployment scripts. With the variables externalized from the deployment script, you can now have different configuration files for different environments or deployments, which are then passed to the deployment script.
 
-See [sample-william-vcf.ps1](sample-william-vcf.ps1) for an example.
+See [sample-william-vcf-9.1.0.ps1](sample-william-vcf-9.1.0.ps1) for an example.
 
 This section describes the credentials to your physical vCenter Server in which the VCF lab environment will be deployed to:
 ```console
@@ -81,7 +85,7 @@ $VMGateway = "172.16.1.53"
 $VMDNS = "172.16.1.3"
 $VMNTP = "172.16.1.53"
 $VMPassword = "VMware1!"
-$VMDomain = "vcf.lab"
+$VMDomain = "vcf.lcm"
 $VMSyslog = "172.16.1.250"
 $VMFolder = "wlam"
 ```
@@ -93,13 +97,22 @@ $Debug = $false
 
 This section describes the location of the files required for deployment.
 ```console
-$NestedESXiApplianceOVA = "/images/Nested_ESXi9.0_Appliance_Template_v1.0.ova"
-$VCFInstallerOVA = "/images/VCF-SDDC-Manager-Appliance-9.0.0.0.24703748.ova"
+$NestedESXiApplianceOVA = "/data/images/Nested_ESXi9.1.0.0_Appliance_Template_v1.0.ova"
+$VCFInstallerOVA = "/data/images/PROD/COMP/SDDC_MANAGER_VCF/VCF-SDDC-Manager-Appliance-9.1.0.0.25371088.ova"
+```
+
+This section describes any override flags thats required to be used on the VCF Installer (/etc/vmware/vcf/domainmanager/application.properties)
+```console
+$VCFDomainManagerProperties = @{
+    "validation.disable.network.connectivity.check" = "true"
+    "nsxt.mtu.validation.skip" = "true"
+    "vsan.esa.sddc.managed.disk.claim" = "true"
+}
 ```
 
 This section describes the VCF version to deploy
 ```console
-$VCFInstallerProductVersion = "9.0.0.0"
+$VCFInstallerProductVersion = "9.1.0.0"
 $VCFInstallerProductSKU = "VCF"
 ```
 
@@ -116,34 +129,31 @@ $VCFInstallerSoftwareDepot = "offline" #online or offline
 $VCFInstallerDepotToken = ""
 
 # Offline Depot Configurations (optional)
-$VCFInstallerDepotUsername = "vcf"
-$VCFInstallerDepotPassword = "vcf123!"
-$VCFInstallerDepotHost = "172.16.1.54"
-$VCFInstallerDepotPort = 8888
-$VCFInstallerDepotHttps = $false
+$VCFInstallerDepotUrl = "http://172.16.1.54:8888"
 ```
+
+💡 For simplicity purposes, only offline depot without basic auth is supported with script. Users can override this behavior by updating the JSON payload
 
 This section describes the VCF Fleet level configuration values. The `$DeploymentInstanceName` can be a friendly label that is displayed within VCF Operations but the `$DeploymentId` should be DNS-compliant, no special characters or spaces.
 ```console
-$DeploymentInstanceName = "William VCF 9 Instance"
+$DeploymentInstanceName = "William VCF 9.1 Instance"
 $DeploymentId = "vcf-m01"
 $CEIPEnabled = $true
-$FIPSEnabled = $true
 ```
 
 This section describes the VCF Installer configuration which will be deployed onto your physical vCenter Server environment, along side the Nested ESXi VMs. The `$VCFInstallerAdminUsername` value should be left as the default below.
 ```console
 $VCFInstallerVMName = "inst01"
-$VCFInstallerFQDN = "inst01.vcf.lab"
+$VCFInstallerFQDN = "inst01.vcf.lcm"
 $VCFInstallerIP = "172.16.30.10"
-$VCFInstallerAdminUsername = "admin@local"
+$VCFInstallerAdminUsername = "admin@local" # do not change
 $VCFInstallerAdminPassword = "VMware1!VMware1!"
 $VCFInstallerRootPassword = "VMware1!VMware1!"
 ```
 
 This section describes the SDDC Manager component that will be deployed as part of the VCF Fleet.
 ```console
-$SddcManagerHostname = "sddcm01"
+$SddcManagerHostname  = "sddcm01"
 $SddcManagerIP = "172.16.30.11"
 $SddcManagerRootPassword = "VMware1!VMware1!"
 $SddcManagerVcfPassword = "VMware1!VMware1!"
@@ -198,11 +208,10 @@ $NestedESXiNSXTepNetworkCidr = "10.1.34.0/24"
 This section describes the vCenter Server configuration that will be used within the VCF Fleet deployment.
 ```console
 $VCSAName = "vc01"
-$VCSAIP = "172.16.30.13"
+$VCSAIP = "172.16.30.12"
 $VCSARootPassword = "VMware1!VMware1!"
 $VCSASSOPassword = "VMware1!VMware1!"
-$VCSASize = "small"
-$VCSAEnableVCLM = $true
+$VCSASize = "medium"
 $VCSADatacenterName = "vcf-mgmt-dc"
 $VCSAClusterName = "vcf-mgmt-cl01"
 ```
@@ -211,49 +220,72 @@ This section describes the vSAN configurations that will be used within the VCF 
 ```console
 $VSANFTT = 0
 $VSANDedupe = $false
-$VSANESAEnabled = $false
+$VSANESAEnabled = $true
 $VSANDatastoreName = "vsanDatastore"
-```
-
-This section describes the VCF Operation configurations that will be used within the VCF Fleet deployment.
-```console
-$VCFOperationsSize = "small"
-$VCFOperationsHostname = "vcf01"
-$VCFOperationsIP = "172.16.30.12"
-$VCFOperationsRootPassword = "VMware1!VMware1!"
-$VCFOperationsAdminPassword = "VMware1!VMware1!"
 ```
 
 This section describes the NSX Manager configurations that will be used within the VCF Fleet deployment.
 ```console
 $NSXManagerSize = "medium"
 $NSXManagerVIPHostname = "nsx01"
-$NSXManagerVIPIP = "172.16.30.14"
+$NSXManagerVIPIP = "172.16.30.20"
 $NSXManagerNodeHostname = "nsx01a"
 $NSXRootPassword = "VMware1!VMware1!"
 $NSXAdminPassword = "VMware1!VMware1!"
 $NSXAuditPassword = "VMware1!VMware1!"
 ```
 
+This section describes the VCF Management Services (VCFMS) configurations that will be used within the VCF Fleet deployment.
+```console
+$VCFManagementServicesSize = "small"
+$VCFManagementServicesRuntimeHostname = "vcf-msr01"
+$VCFManagementServicesSystemPassword = "VMware1!VMware1!"
+$VCFManagementServicesFleetHostname = "vcf-flt01"
+$VCFManagementServicesInstanceHostname = "vcf-int01"
+$VCFManagementServicesIPStartRange = "172.16.1.65"
+$VCFManagementServicesIPEndRange = "172.16.1.76"
+$VCFManagementServicesInternalClusterCidrIpv4 = "198.18.0.0/15"
+```
+
+This section describes the Identity Broker component that runs within VCFMS
+```console
+$VCFManagementServicesIdentityHostname = "vcf-idb01"
+```
+
+This section describes the Log Management component that runs within VCFMS
+```console
+$VCFManagementLogsHostname = "vcf-logs01"
+$VCFManagementLogsPassword = "VMware1!VMware1!"
+```
+
+This section describes the License Server configuration
+```console
+$VCFLicenseServerHostname = "vcf-lic01"
+```
+
+This section describes the VCF Operation configurations that will be used within the VCF Fleet deployment.
+```console
+$VCFOperationsSize = "small"
+$VCFOperationsHostname = "vcf01"
+$VCFOperationsIP = "172.16.30.13"
+$VCFOperationsRootPassword = "VMware1!VMware1!"
+$VCFOperationsAdminPassword = "VMware1!VMware1!"
+```
+
 This section describes the VCF Operations Collector configurations that will be used within the VCF Fleet deployment.
 ```console
 $VCFOperationsCollectorSize = "small"
-$VCFOperationsCollectorHostname = "opsproxy01"
+$VCFOperationsCollectorHostname = "vcf-proxy01"
 $VCFOperationsCollectorRootPassword = "VMware1!VMware1!"
-```
-
-This section describes the VCF Operations Fleet Manager configurations that will be used within the VCF Fleet deployment.
-```console
-$VCFOperationsFleetManagerHostname = "opsfm01"
-$VCFOperationsFleetManagerAdminPassword = "VMware1!VMware1!"
-$VCFOperationsFleetManagerRootPassword = "VMware1!VMware1!"
 ```
 
 This section describes the VCF Automation configurations that will be used within the VCF Fleet deployment.
 ```console
+$VCFAutomationSize = "small"
 $VCFAutomationHostname = "auto01"
+$VCFAutomationServicesRuntimeHostname = "vcf-asr01"
 $VCFAutomationAdminPassword = "VMware1!VMware1!"
-$VCFAutomationIPPool = @("172.16.30.23","172.16.30.24")
+$VCFAutomationIPPool = @("172.16.1.77","172.16.1.78","172.16.1.79","172.16.1.80","172.16.1.81")
 $VCFAutomationNodePrefix = "vcf-lamw-auto"
 $VCFAutomationClusterCIDR = "198.18.0.0/15"
 ```
@@ -289,23 +321,29 @@ $VCFWorkloadDomainSeparateNSXSwitch = $false
 
 In the example below, I am using /16 VLAN (172.16.0.0/16) for all my management VMs with the following DNS entries:
 
-|           FQDN          | IP Address    | Function                |
-|:-----------------------:|---------------|-------------------------|
-| esx01.vcf.lab       | 172.16.30.1  | ESX Host 1 for Mgmt          |
-| esx02.vcf.lab       | 172.16.30.2  | ESX Host 2 for Mgmt          |
-| esx03.vcf.lab       | 172.16.30.3  | ESX Host 3 for Mgmt          |
-| esx04.vcf.lab       | 172.16.30.4  | ESX Host 1 for WLD           |
-| esx05.vcf.lab       | 172.16.30.5  | ESX Host 2 for WLD           |
-| esx06.vcf.lab       | 172.16.30.6  | ESX Host 3 for WLD           |
-| inst01.vcf.lab      | 172.16.30.10 | VCF Installer                |
-| sddcm01.vcf.lab     | 172.16.30.11 | SDDC Manager                 |
-| vcf01.vcf.lab       | 172.16.30.12 | VCF Operations               |
-| vc01.vcf.lab        | 172.16.30.13 | vCenter Server for Mgmt      |
-| nsx01.vcf.lab       | 172.16.30.14 | NSX Manager VIP for Mgmt     |
-| nsx01a.vcf.lab      | 172.16.30.15 | NSX Manager Node 1 for Mgmt  |
-| opsproxy01.vcf.lab  | 172.16.30.20 | VCF Operations Collector     |
-| opsfm01.vcf.lab     | 172.16.30.21 | VCF Operations Fleet Manager |
-| auto01.vcf.lab      | 172.16.30.22 | VCF Automation               |
+| FQDN                | IP Address   | Function                                       |
+|:-------------------:|--------------|------------------------------------------------|
+| esx01.vcf.lcm       | 172.16.30.1  | ESX Host 1 for Mgmt                            |
+| esx02.vcf.lcm       | 172.16.30.2  | ESX Host 2 for Mgmt                            |
+| esx03.vcf.lcm       | 172.16.30.3  | ESX Host 3 for Mgmt                            |
+| esx04.vcf.lcm       | 172.16.30.4  | ESX Host 1 for WLD                             |
+| esx05.vcf.lcm       | 172.16.30.5  | ESX Host 2 for WLD                             |
+| esx06.vcf.lcm       | 172.16.30.6  | ESX Host 3 for WLD                             |
+| inst01.vcf.lcm      | 172.16.30.10 | VCF Installer                                  |
+| sddcm01.vcf.lcm     | 172.16.30.11 | SDDC Manager                                   |
+| vc01.vcf.lcm        | 172.16.30.12 | vCenter Server for Mgmt                        |
+| vcf01.vcf.lcm       | 172.16.30.13 | VCF Operations                                 |
+| vcf-msr01.vcf.lcm   | 172.16.30.14 | VCF Management Services Runtime                |
+| vcf-flt01.vcf.lcm   | 172.16.30.15 | VCF Management Services Fleet FQDN             |
+| vcf-int01.vcf.lcm   | 172.16.30.16 | VCF Management Services Instance FQDN          |
+| vcf-lic01.vcf.lcm   | 172.16.30.17 | License Server                                 |
+| vcf-log01.vcf.lcm   | 172.16.30.18 | Log Management                                 |
+| vcf-idb01.vcf.lcm   | 172.16.30.18 | Identity Broker                                |
+| nsx01.vcf.lcm       | 172.16.30.20 | NSX Manager VIP for Mgmt                       |
+| nsx01a.vcf.lcm      | 172.16.30.21 | NSX Manager Node 1 for Mgmt                    |
+| vcf-proxy01.vcf.lcm | 172.16.30.28 | VCF Operations Collector                       |
+| vcf-asr01.vcf.lcm   | 172.16.30.29 | VCF Automation Services Runtime                |
+| auto01.vcf.lcm      | 172.16.30.30 | VCF Automation                                 |
 
 ### VCF Deploy Nested ESX and VCF Installer VMs
 
@@ -347,9 +385,9 @@ Here is an example of what will be deployed as part of Workload Domain creation:
 
 |           FQDN          | IP Address    | Function                    |
 |:-----------------------:|---------------|-----------------------------|
-| vc02.vcf.lab            | 172.16.30.40 | vCenter Server for WLD       |
-| nsx02.vcf.lab           | 172.16.30.41 | NSX Manager VIP for WLD      |
-| nsx02a.vcf.lab          | 172.16.30.42 | NSX Manager Node 1 for WLD   |
+| vc02.vcf.lcm            | 172.16.30.40 | vCenter Server for WLD       |
+| nsx02.vcf.lcm           | 172.16.30.41 | NSX Manager VIP for WLD      |
+| nsx02a.vcf.lcm          | 172.16.30.42 | NSX Manager Node 1 for WLD   |
 
 ### VCF Example Deployment
 
@@ -377,40 +415,44 @@ Below is a diagram of what is deployed as part of the solution and you will need
 
 * VVF subscription entitlement to download VCF 9.x software binaries
 * VVF Online or Offline Depot
-* [Nested ESX 9.0.0.0 OVA](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Nested%20ESXi%20Virtual%20Appliance&release=9.0.0.0&os=&servicePk=&language=EN)
-    * ESXi 9.0 is only available as part of VMware Cloud Foundation (VCF) or VMware vSphere Foundation (VVF) subscription, you will need an active VVF/VCF entitlement to download the Nested ESXi 9.x Virtual Appliance. For [VMUG Advantage members who have obtained the new VCP-VCF certification](https://williamlam.com/2025/07/how-to-deploy-vvf-vcf-9-0-using-vmug-advantage-vcp-vcf-certification-entitlement.html), you will be entitled to the download.
+* [Nested ESX 9.1.0.0 OVA](https://support.broadcom.com/group/ecx/productfiles?subFamily=Flings&displayGroup=Nested%20ESXi%20Virtual%20Appliance&release=9.1.0.0&os=&servicePk=&language=EN)
+    * ESXi 9.1 is only available as part of VMware Cloud Foundation (VCF) or VMware vSphere Foundation (VVF) subscription, you will need an active VVF/VCF entitlement to download the Nested ESXi 9.x Virtual Appliance. For [VMUG Advantage members who have obtained the new VCP-VCF certification](https://williamlam.com/2025/07/how-to-deploy-vvf-vcf-9-0-using-vmug-advantage-vcp-vcf-certification-entitlement.html), you will be entitled to the download.
 * vCenter Server running at least vSphere 8.0 or later
     * If your physical storage is vSAN, please ensure you've applied the following setting as mentioned [here](https://www.williamlam.com/2013/11/how-to-run-nested-esxi-on-top-of-vsan.html)
 * ESXi Networking
   * Enable either [MAC Learning](https://williamlam.com/2018/04/native-mac-learning-in-vsphere-6-7-removes-the-need-for-promiscuous-mode-for-nested-esxi.html) or [Promiscuous Mode](https://knowledge.broadcom.com/external/article?legacyId=1004099) and also enable Forged Transmits on your physical ESXi host networking to ensure proper network connectivity for Nested ESXi workloads
 * Resource Requirements
     * Compute
-        * Ability to provision VMs with up to 4 vCPU
-        * Ability to provision up to 74 GB of memory
+        * Ability to provision VMs with up to 12 vCPU
+        * Ability to provision up to 104 GB of memory
         * DRS-enabled Cluster (not required but vApp creation will not be possible)
     * Network
         * 1 x Standard or Distributed Portgroup (routable) to deploy all VMs
-           * 6 x FQDN/IP Addresses for VVF deployment
+           * 10 x FQDN/IP Addresses for VVF deployment
     * Storage
         * Ability to provision up to 100 GB of storage (thin provisioned)
 * Desktop (Windows, Mac or Linux) with latest PowerShell Core and PowerCLI 13 Core or later installed. See [instructions here](https://developer.broadcom.com/powercli/installation-guide) for more details
 
 ### VVF Configuration
 
-For a VVF deployment, the `VCFInstallerProductSKU` variable needs to change to `VVF` and _only_ the Management ESXi Hosts, vCenter Server and VCF Operations configuration variables are used. You can refer to the [sample-william-vvf.ps1](sample-william-vvf.ps1) for an example.
+For a VVF deployment, the `VCFInstallerProductSKU` variable needs to change to `VVF` and _only_ the Management ESXi Hosts, vCenter Server and VCF Operations configuration variables are used. You can refer to the [sample-william-vvf-9.1.0.ps1](sample-william-vvf-9.1.0.ps1) for an example.
 
 ### VVF Sample Execution
 
 In the example below, I am using /16 VLAN (172.16.0.0/16) for all my management VMs with the following DNS entries:
 
-|           FQDN          | IP Address    | Function                |
-|:-----------------------:|---------------|-------------------------|
-| esx01.vcf.lab       | 172.16.30.1  | ESX Host 1 for Mgmt          |
-| esx02.vcf.lab       | 172.16.30.2  | ESX Host 2 for Mgmt          |
-| esx03.vcf.lab       | 172.16.30.3  | ESX Host 3 for Mgmt          |
-| inst01.vcf.lab      | 172.16.30.10 | VCF Installer                |
-| vcf01.vcf.lab       | 172.16.30.12 | VCF Operations               |
-| vc01.vcf.lab        | 172.16.30.13 | vCenter Server for Mgmt      |
+| FQDN                | IP Address   | Function                                       |
+|:-------------------:|--------------|------------------------------------------------|
+| esx01.vcf.lcm       | 172.16.30.1  | ESX Host 1 for Mgmt                            |
+| esx02.vcf.lcm       | 172.16.30.2  | ESX Host 2 for Mgmt                            |
+| esx03.vcf.lcm       | 172.16.30.3  | ESX Host 3 for Mgmt                            |
+| inst01.vcf.lcm      | 172.16.30.10 | VCF Installer                                  |
+| vc01.vcf.lcm        | 172.16.30.12 | vCenter Server for Mgmt                        |
+| vcf01.vcf.lcm       | 172.16.30.13 | VCF Operations                                 |
+| vcf-msr01.vcf.lcm   | 172.16.30.14 | VCF Management Services Runtime                |
+| vcf-flt01.vcf.lcm   | 172.16.30.15 | VCF Management Services Fleet FQDN             |
+| vcf-int01.vcf.lcm   | 172.16.30.16 | VCF Management Services Instance FQDN          |
+| vcf-lic01.vcf.lcm   | 172.16.30.17 | License Server                                 |
 
 Here is a screenshot of running the script if all basic pre-reqs have been met and the confirmation message before starting the deployment:
 
