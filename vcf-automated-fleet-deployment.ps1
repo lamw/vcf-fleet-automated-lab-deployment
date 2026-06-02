@@ -767,7 +767,7 @@ if($generateMgmtJson -eq 1) {
     $hostSpecs = @()
     $count = 1
     $NestedESXiHostnameToIPsForManagementDomain.GetEnumerator() | Sort-Object -Property Value | Foreach-Object {
-        $VMName = "$($_.Key).vcf.lcm"
+        $VMName = "$VMName = "$($_.Key)." + $VMDomain"
 
         $hostSpec = [ordered]@{
             "hostname" = $VMName
