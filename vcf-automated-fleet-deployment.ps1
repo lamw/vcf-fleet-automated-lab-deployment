@@ -918,10 +918,6 @@ if($generateMgmtJson -eq 1) {
         $vidbSpec = [ordered]@{
             "hostname" = $VCFManagementServicesIdentityHostname
         }
-        $vcfOperationsLogsSpec = [ordered]@{
-            "hostname" = $VCFManagementLogsHostname
-            "password" = $VCFManagementLogsPassword
-        }
         $opsCollectorSpec = [ordered]@{
             "hostname" = $VCFOperationsCollectorHostname
             "applicationSize" = $VCFOperationsCollectorSize
@@ -1043,7 +1039,6 @@ if($generateMgmtJson -eq 1) {
         $vcfConfig.Add("vcfAutomationSpec",$autoSpec)
         $vcfConfig.Add("saltSpec",@{})
         $vcfConfig.Add("vidbSpec",$vidbSpec)
-        $vcfConfig.Add("vcfOperationsLogsSpec",$vcfOperationsLogsSpec)
         $vcfConfig.Add("saltRaasSpec",@{})
     }
 

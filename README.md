@@ -252,12 +252,6 @@ This section describes the Identity Broker component that runs within VCFMS
 $VCFManagementServicesIdentityHostname = "vcf-idb01"
 ```
 
-This section describes the Log Management component that runs within VCFMS
-```console
-$VCFManagementLogsHostname = "vcf-logs01"
-$VCFManagementLogsPassword = "VMware1!VMware1!"
-```
-
 This section describes the License Server configuration
 ```console
 $VCFLicenseServerHostname = "vcf-lic01"

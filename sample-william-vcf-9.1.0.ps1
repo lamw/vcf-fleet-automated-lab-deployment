@@ -135,10 +135,6 @@ $VCFManagementServicesInternalClusterCidrIpv4 = "198.18.0.0/15"
 # Identity Management
 $VCFManagementServicesIdentityHostname = "vcf-idb01"
 
-# Logs Management
-$VCFManagementLogsHostname = "vcf-logs01"
-$VCFManagementLogsPassword = "VMware1!VMware1!"
-
 # License Server
 $VCFLicenseServerHostname = "vcf-lic01"
 
